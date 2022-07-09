@@ -4,13 +4,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "compiler.h"
 #include "debug.h"
 #include "value.h"
 
 static vm_t vm;
 
 // Forward declarations.
-static execute_result_t run();
+static execute_result_t vm_run();
 static void stack_reset();
 static void stack_debug_print();
 
@@ -21,13 +22,13 @@ void vm_init() {
 void vm_free() {
 }
 
-execute_result_t execute(chunk_t* chunk) {
-  vm.chunk = chunk;
-  vm.ip = vm.chunk->code;
-  return run();
+execute_result_t execute(const char* source) {
+  compile(source);
+  (void)vm_run; // unused for now
+  return EXECUTE_OK;
 }
 
-static execute_result_t run() {
+static execute_result_t vm_run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define BINARY_OP(op) \

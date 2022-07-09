@@ -22,7 +22,7 @@ typedef enum {
 
 void vm_init();
 void vm_free();
-execute_result_t execute(chunk_t* chunk);
+execute_result_t execute(const char* source);
 void stack_push(value_t value);
 value_t stack_pop();
 
