@@ -10,7 +10,7 @@ OBJS=$(SRCS:.c=.o)
 clox: main.c $(OBJS)
 	$(CC) $(CFLAGS) -o clox $^
 
-$(OBJCS): %.o: %.c %.h
+$(OBJS): %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
