@@ -5,8 +5,11 @@
 #include <stdio.h>
 
 #include "compiler.h"
-#include "debug.h"
 #include "value.h"
+
+#ifdef DEBUG_PRINT_CODE
+#include "debug.h"
+#endif
 
 static vm_t vm;
 
@@ -52,6 +55,8 @@ static execute_result_t vm_run() {
 #ifdef DEBUG_TRACE_EXECUTION
     stack_debug_print();
     disasm_instruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+#else
+    (void)stack_debug_print; // unused
 #endif // DEBUG_TRACE_EXECUTION
 
     uint8_t instruction = READ_BYTE();

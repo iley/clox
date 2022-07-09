@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "debug.h"
 #include "scanner.h"
 
 typedef struct {
@@ -165,6 +166,11 @@ static chunk_t* current_chunk() {
 
 static void compiler_end() {
   emit_return();
+#ifdef DEBUG_PRINT_CODE
+  if (!parser.had_error) {
+    disasm_chunk(current_chunk(), "code");
+  }
+#endif
 }
 
 static void emit_byte(uint8_t byte) {
