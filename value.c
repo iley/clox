@@ -28,5 +28,5 @@ void value_array_write(value_array_t* array, value_t value) {
 }
 
 void value_print(value_t value) {
-  printf("%g", value);
+  printf("%g", AS_NUMBER(value));
 }
