@@ -17,6 +17,10 @@ int main() {
   chunk_write(&chunk, OP_RETURN, line_no);
 
   disasm_chunk(&chunk, "chunk");
+
+#ifdef DEBUG_TRACE_EXECUTION
+  printf("== trace ==\n");
+#endif // DEBUG_TRACE_EXECUTION
   execute(&chunk);
 
   chunk_free(&chunk);

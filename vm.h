@@ -5,9 +5,13 @@
 
 #include "chunk.h"
 
+#define STACK_MAX 256
+
 typedef struct {
   chunk_t* chunk;
   uint8_t* ip;
+  value_t stack[STACK_MAX];
+  value_t* stack_top;
 } vm_t;
 
 typedef enum {
@@ -19,5 +23,7 @@ typedef enum {
 void vm_init();
 void vm_free();
 execute_result_t execute(chunk_t* chunk);
+void stack_push(value_t value);
+value_t stack_pop();
 
 #endif // _CLOX_VM_H

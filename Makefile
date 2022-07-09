@@ -1,5 +1,5 @@
 CC:=clang
-CFLAGS:=-std=c17 -Wall -Wextra -Werror
+CFLAGS:=-std=c17 -Wall -Wextra -Werror -DDEBUG_TRACE_EXECUTION
 
 SRCS=chunk.c memory.c debug.c value.c vm.c
 OBJS=$(SRCS:.c=.o)
