@@ -23,9 +23,19 @@ void vm_free() {
 }
 
 execute_result_t execute(const char* source) {
-  compile(source);
-  (void)vm_run; // unused for now
-  return EXECUTE_OK;
+  chunk_t chunk;
+  chunk_init(&chunk);
+  if (!compile(source, &chunk)) {
+    return EXECUTE_COMPILE_ERROR;
+  }
+
+  vm.chunk = &chunk;
+  vm.ip = vm.chunk->code;
+
+  execute_result_t result = vm_run();
+
+  chunk_free(&chunk);
+  return result;
 }
 
 static execute_result_t vm_run() {
