@@ -14,6 +14,7 @@ int main() {
   int line_no = 42;
   chunk_write(&chunk, OP_CONSTANT, line_no);
   chunk_write(&chunk, const_1, line_no);
+  chunk_write(&chunk, OP_NEGATE, line_no);
   chunk_write(&chunk, OP_RETURN, line_no);
 
   disasm_chunk(&chunk, "chunk");

@@ -38,15 +38,18 @@ static execute_result_t run() {
 
     uint8_t instruction = READ_BYTE();
     switch (instruction) {
-      case OP_RETURN:
-        value_print(stack_pop());
-        printf("\n");
-        return EXECUTE_OK;
       case OP_CONSTANT: {
         value_t constant = READ_CONSTANT();
         stack_push(constant);
         break;
       }
+      case OP_NEGATE:
+        stack_push(-stack_pop());
+        break;
+      case OP_RETURN:
+        value_print(stack_pop());
+        printf("\n");
+        return EXECUTE_OK;
     }
   }
 
