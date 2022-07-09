@@ -1,5 +1,5 @@
-#ifndef _MEMORY_H
-#define _MEMORY_H
+#ifndef _CLOX_MEMORY_H
+#define _CLOX_MEMORY_H
 
 #include <stddef.h>
 
@@ -11,4 +11,4 @@
 
 void* reallocate(void* pointer, size_t old_size, size_t new_size);
 
-#endif // _MEMORY_H
+#endif // _CLOX_MEMORY_H

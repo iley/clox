@@ -1,5 +1,5 @@
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef _CLOX_DEBUG_H
+#define _CLOX_DEBUG_H
 
 #include "chunk.h"
 

@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 void* reallocate(void* previous, size_t old_size, size_t new_size) {
-  (void)(old_size); // unused
+  (void)old_size; // unused
 
   if (new_size == 0) {
     free(previous);
