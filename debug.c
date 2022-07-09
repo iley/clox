@@ -25,6 +25,14 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_constant("OP_CONSTANT", chunk, offset);
     case OP_NEGATE:
       return disasm_simple("OP_NEGATE", offset);
+    case OP_ADD:
+      return disasm_simple("OP_ADD", offset);
+    case OP_SUBTRACT:
+      return disasm_simple("OP_SUBTRACT", offset);
+    case OP_MULTIPLY:
+      return disasm_simple("OP_MULTIPLY", offset);
+    case OP_DIVIDE:
+      return disasm_simple("OP_DIVIDE", offset);
     case OP_RETURN:
       return disasm_simple("OP_RETURN", offset);
     default:
