@@ -1,7 +1,7 @@
 CC:=clang
 CFLAGS:=-std=c17 -Wall -Wextra -Werror
 
-SRCS=chunk.c memory.c debug.c
+SRCS=chunk.c memory.c debug.c value.c
 OBJS=$(SRCS:.c=.o)
 
 .PHONY: clean
