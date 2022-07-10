@@ -42,6 +42,8 @@ typedef struct {
 // Forward declarations.
 static void advance();
 static void consume(token_type_t type, const char* message);
+static bool match(token_type_t type);
+static bool check(token_type_t type);
 static void error_at_current(const char* message);
 static void error(const char* message);
 static void error_at(token_t* token, const char* message);
@@ -61,6 +63,9 @@ static void unary();
 static void binary();
 static void literal();
 static void string();
+static void declaration();
+static void statement();
+static void print_statement();
 
 parser_t parser;
 chunk_t* compiling_chunk;
@@ -116,8 +121,11 @@ bool compile(const char* source, chunk_t* chunk) {
   parser.panic_mode = false;
 
   advance();
-  expression();
-  consume(TOKEN_EOF, "expected end of expression");
+
+  while (!match(TOKEN_EOF)) {
+    declaration();
+  }
+
   compiler_end();
   return !parser.had_error;
 }
@@ -140,6 +148,18 @@ static void consume(token_type_t type, const char* message) {
   }
 
   error_at_current(message);
+}
+
+static bool match(token_type_t type) {
+  if (!check(type)) {
+    return false;
+  }
+  advance();
+  return true;
+}
+
+static bool check(token_type_t type) {
+  return parser.current.type == type;
 }
 
 static void error_at_current(const char* message) {
@@ -280,4 +300,20 @@ static void literal() {
 
 static void string() {
   emit_constant(OBJ_VAL(string_copy(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
+static void declaration() {
+  statement();
+}
+
+static void statement() {
+  if (match(TOKEN_PRINT)) {
+    print_statement();
+  }
+}
+
+static void print_statement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "expected ; after value");
+  emit_byte(OP_PRINT);
 }

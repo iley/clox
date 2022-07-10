@@ -30,11 +30,12 @@ int disasm_instruction(chunk_t* chunk, int offset) {
     case OP_SUBTRACT: return disasm_simple("OP_SUBTRACT", offset);
     case OP_MULTIPLY: return disasm_simple("OP_MULTIPLY", offset);
     case OP_DIVIDE:   return disasm_simple("OP_DIVIDE", offset);
-    case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
     case OP_NOT:      return disasm_simple("OP_NOT", offset);
     case OP_EQUAL:    return disasm_simple("OP_EQUAL", offset);
     case OP_GREATER:  return disasm_simple("OP_GREATER", offset);
     case OP_LESS:     return disasm_simple("OP_LESS", offset);
+    case OP_PRINT:    return disasm_simple("OP_PRINT", offset);
+    case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;

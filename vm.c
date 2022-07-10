@@ -116,9 +116,12 @@ static execute_result_t vm_run() {
       case OP_NOT:
         stack_push(BOOL_VAL(is_falsey(stack_pop())));
         break;
-      case OP_RETURN:
+      case OP_PRINT:
         value_print(stack_pop());
         printf("\n");
+        break;
+      case OP_RETURN:
+        // exit interpreter
         return EXECUTE_OK;
     }
   }
