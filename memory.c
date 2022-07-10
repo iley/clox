@@ -37,7 +37,8 @@ void free_objects() {
 void free_object(obj_t* object) {
   switch (object->type) {
     case OBJ_STRING: {
-      FREE(obj_string_t, object);
+      reallocate(object, sizeof(obj_string_t) + ((obj_string_t*)(object))->length + 1, 0);
+      break;
     }
   }
 }
