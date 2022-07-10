@@ -81,9 +81,32 @@ void table_add_all(table_t* from, table_t* to) {
   }
 }
 
+obj_string_t* table_find_string(table_t* table, const char* chars, int length, uint32_t hash) {
+  if (table->count == 0) {
+    return NULL;
+  }
+
+  uint32_t index = hash % table->capacity;
+  for (;;) {
+    entry_t* entry = &table->entries[index];
+    if (entry->key == NULL) {
+      // stop if we find an empty non-tombstone entry
+      if (IS_NIL(entry->value)) {
+        return NULL;
+      }
+    } else if (entry->key->length == length &&
+               entry->key->hash == hash &&
+               memcmp(entry->key->chars, chars, length) == 0) {
+      return entry->key;
+    }
+
+    index = (index + 1) % table->capacity;
+  }
+}
+
 static entry_t* find_entry(entry_t* entries, int capacity, obj_string_t* key) {
   uint32_t index = key->hash % capacity;
-  entry_t* tombstone;
+  entry_t* tombstone = NULL;
   for (;;) {
     entry_t* entry = &entries[index];
     if (entry->key == NULL) {

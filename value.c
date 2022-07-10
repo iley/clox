@@ -54,12 +54,7 @@ bool values_equal(value_t first, value_t second) {
     case VAL_BOOL:   return AS_BOOL(first) == AS_BOOL(second);
     case VAL_NIL:    return true;
     case VAL_NUMBER: return AS_NUMBER(first) == AS_NUMBER(second);
-    case VAL_OBJ: {
-      obj_string_t* first_string = AS_STRING(first);
-      obj_string_t* second_string = AS_STRING(second);
-      return first_string->length == second_string->length &&
-        memcmp(first_string->chars, second_string->chars, first_string->length) == 0;
-    }
+    case VAL_OBJ:    return AS_OBJ(first) == AS_OBJ(second);
     default:         return false;  // unreachable
   }
 }
