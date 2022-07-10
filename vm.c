@@ -4,15 +4,18 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "compiler.h"
+#include "object.h"
+#include "memory.h"
 #include "value.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
 
-static vm_t vm;
+vm_t vm;
 
 // Forward declarations.
 static execute_result_t vm_run();
@@ -21,12 +24,15 @@ static void stack_debug_print();
 static value_t stack_peek(int distance);
 static void runtime_error(const char* format, ...);
 static bool is_falsey(value_t value);
+static void concatenate_strings();
 
 void vm_init() {
   stack_reset();
+  vm.objects = NULL;
 }
 
 void vm_free() {
+  free_objects();
 }
 
 execute_result_t execute(const char* source) {
@@ -92,7 +98,16 @@ static execute_result_t vm_run() {
         }
         stack_push(NUMBER_VAL(-AS_NUMBER(stack_pop())));
         break;
-      case OP_ADD:      BINARY_OP(NUMBER_VAL, +); break;
+      case OP_ADD:
+        if (IS_STRING(stack_peek(0)) && IS_STRING(stack_peek(1))) {
+          concatenate_strings();
+        } else if (IS_NUMBER(stack_peek(0)) && IS_NUMBER(stack_peek(1))) {
+          BINARY_OP(NUMBER_VAL, +);
+        } else {
+          runtime_error("operands of + must be two numbers or two strings");
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        break;
       case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
       case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
       case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
@@ -158,4 +173,18 @@ static void runtime_error(const char* format, ...) {
 
 static bool is_falsey(value_t value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
+static void concatenate_strings() {
+  obj_string_t* second = AS_STRING(stack_pop());
+  obj_string_t* first = AS_STRING(stack_pop());
+
+  int length = first->length + second->length;
+  char* chars = ALLOCATE(char, length + 1);
+  memcpy(chars, first->chars, first->length);
+  memcpy(chars + first->length, second->chars, second->length);
+  chars[length] = '\0';
+
+  obj_string_t* result = string_take(chars, length);
+  stack_push(OBJ_VAL(result));
 }

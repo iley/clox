@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "object.h"
+#include "vm.h"
+
+static void free_object(obj_t* object);
+
 void* reallocate(void* previous, size_t old_size, size_t new_size) {
   (void)old_size; // unused
 
@@ -19,4 +24,22 @@ void* reallocate(void* previous, size_t old_size, size_t new_size) {
   }
 
   return result;
+}
+
+void free_objects() {
+  for (obj_t* object = vm.objects; object != NULL; ) {
+    obj_t* next = object->next;
+    free_object(object);
+    object = next;
+  }
+}
+
+void free_object(obj_t* object) {
+  switch (object->type) {
+    case OBJ_STRING: {
+      obj_string_t* string = (obj_string_t*)object;
+      FREE_ARRAY(char, string->chars, string->length + 1);
+      FREE(obj_string_t, object);
+    }
+  }
 }

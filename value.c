@@ -3,8 +3,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "memory.h"
+#include "object.h"
 
 void value_array_init(value_array_t* array) {
   array->count = 0;
@@ -38,6 +40,9 @@ void value_print(value_t value) {
     case VAL_NUMBER:
       printf("%g", AS_NUMBER(value));
       break;
+    case VAL_OBJ:
+      object_print(value);
+      break;
   }
 }
 
@@ -49,6 +54,12 @@ bool values_equal(value_t first, value_t second) {
     case VAL_BOOL:   return AS_BOOL(first) == AS_BOOL(second);
     case VAL_NIL:    return true;
     case VAL_NUMBER: return AS_NUMBER(first) == AS_NUMBER(second);
+    case VAL_OBJ: {
+      obj_string_t* first_string = AS_STRING(first);
+      obj_string_t* second_string = AS_STRING(second);
+      return first_string->length == second_string->length &&
+        memcmp(first_string->chars, second_string->chars, first_string->length) == 0;
+    }
     default:         return false;  // unreachable
   }
 }
