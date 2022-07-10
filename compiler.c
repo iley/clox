@@ -54,6 +54,9 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2);
 static void emit_return();
 static void emit_constant(value_t value);
 static uint8_t make_constant(value_t value);
+static uint8_t identifier_constant(token_t* name);
+static uint8_t parse_variable(const char* error_message);
+static void define_variable(uint8_t global);
 static void parse_precedence(precedence_t precedence);
 static parse_rule_t* get_rule(token_type_t type);
 static void expression();
@@ -66,6 +69,9 @@ static void string();
 static void declaration();
 static void statement();
 static void print_statement();
+static void expression_statement();
+static void synchronize();
+static void var_declaration();
 
 parser_t parser;
 chunk_t* compiling_chunk;
@@ -216,6 +222,10 @@ static void emit_constant(value_t value) {
   emit_bytes(OP_CONSTANT, make_constant(value));
 }
 
+static uint8_t identifier_constant(token_t* name) {
+  return make_constant(OBJ_VAL(string_copy(name->start, name->length)));
+}
+
 static uint8_t make_constant(value_t value) {
   int index = chunk_add_constant(current_chunk(), value);
   if (index > UINT8_MAX) {
@@ -223,6 +233,15 @@ static uint8_t make_constant(value_t value) {
     return 0;
   }
   return (uint8_t)index;
+}
+
+static uint8_t parse_variable(const char* error_message) {
+  consume(TOKEN_IDENTIFIER, error_message);
+  return identifier_constant(&parser.previous);
+}
+
+static void define_variable(uint8_t global) {
+  emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
 static void parse_precedence(precedence_t precedence) {
@@ -303,17 +322,73 @@ static void string() {
 }
 
 static void declaration() {
-  statement();
+  if (match(TOKEN_VAR)) {
+    var_declaration();
+  } else {
+    statement();
+  }
+
+  if (parser.panic_mode) {
+    synchronize();
+  }
 }
 
 static void statement() {
   if (match(TOKEN_PRINT)) {
     print_statement();
+  } else {
+    expression_statement();
   }
 }
 
 static void print_statement() {
   expression();
-  consume(TOKEN_SEMICOLON, "expected ; after value");
+  consume(TOKEN_SEMICOLON, "expected ; after value in print statement");
   emit_byte(OP_PRINT);
+}
+
+static void expression_statement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "expected ; after expression");
+  emit_byte(OP_POP);
+}
+
+static void synchronize() {
+  parser.panic_mode = false;
+
+  while (parser.current.type != TOKEN_EOF) {
+    if (parser.previous.type == TOKEN_SEMICOLON) {
+      return;
+    }
+
+    switch (parser.current.type) {
+      case TOKEN_CLASS:
+      case TOKEN_FUN:
+      case TOKEN_VAR:
+      case TOKEN_FOR:
+      case TOKEN_IF:
+      case TOKEN_WHILE:
+      case TOKEN_PRINT:
+      case TOKEN_RETURN:
+        return;
+      default:
+        ; // do nothing
+    }
+
+    advance();
+  }
+}
+
+static void var_declaration() {
+  uint8_t global = parse_variable("expected variable name after var");
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emit_byte(OP_NIL);
+  }
+
+  consume(TOKEN_SEMICOLON, "expected ; after variable declaration");
+
+  define_variable(global);
 }

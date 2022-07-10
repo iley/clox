@@ -35,6 +35,9 @@ int disasm_instruction(chunk_t* chunk, int offset) {
     case OP_GREATER:  return disasm_simple("OP_GREATER", offset);
     case OP_LESS:     return disasm_simple("OP_LESS", offset);
     case OP_PRINT:    return disasm_simple("OP_PRINT", offset);
+    case OP_POP:      return disasm_simple("OP_POP", offset);
+    case OP_DEFINE_GLOBAL:
+      return disasm_constant("OP_DEFINE_GLOBAL", chunk, offset);
     case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
     default:
       printf("unknown instruction %02x\n", instruction);

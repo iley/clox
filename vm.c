@@ -29,11 +29,13 @@ static void concatenate_strings();
 void vm_init() {
   stack_reset();
   vm.objects = NULL;
+  table_init(&vm.globals);
   table_init(&vm.strings);
 }
 
 void vm_free() {
   table_free(&vm.strings);
+  table_free(&vm.globals);
   free_objects();
 }
 
@@ -56,6 +58,7 @@ execute_result_t execute(const char* source) {
 static execute_result_t vm_run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(value_type, op) \
   do { \
     if (!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) { \
@@ -120,6 +123,15 @@ static execute_result_t vm_run() {
         value_print(stack_pop());
         printf("\n");
         break;
+      case OP_POP:
+        stack_pop();
+        break;
+      case OP_DEFINE_GLOBAL: {
+        obj_string_t* name = READ_STRING();
+        table_set(&vm.globals, name, stack_peek(0));
+        stack_pop();
+        break;
+      }
       case OP_RETURN:
         // exit interpreter
         return EXECUTE_OK;
@@ -129,6 +141,7 @@ static execute_result_t vm_run() {
   return EXECUTE_RUNTIME_ERROR;
 
 #undef BINARY_OP
+#undef READ_STRING
 #undef READ_CONSTANT
 #undef READ_BYTE
 }

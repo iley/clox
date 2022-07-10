@@ -20,6 +20,8 @@ typedef enum {
   OP_DIVIDE,
   OP_NOT,
   OP_PRINT,
+  OP_POP,
+  OP_DEFINE_GLOBAL,
   OP_RETURN,
 } opcode_t;
 
