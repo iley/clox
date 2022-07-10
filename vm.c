@@ -73,6 +73,9 @@ static execute_result_t vm_run() {
         stack_push(constant);
         break;
       }
+      case OP_NIL: stack_push(NIL_VAL); break;
+      case OP_TRUE: stack_push(BOOL_VAL(true)); break;
+      case OP_FALSE: stack_push(BOOL_VAL(false)); break;
       case OP_NEGATE:
         if (!IS_NUMBER(stack_peek(0))) {
           runtime_error("operand must be a number");

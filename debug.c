@@ -23,6 +23,12 @@ int disasm_instruction(chunk_t* chunk, int offset) {
   switch (instruction) {
     case OP_CONSTANT:
       return disasm_constant("OP_CONSTANT", chunk, offset);
+    case OP_NIL:
+      return disasm_simple("OP_NIL", offset);
+    case OP_TRUE:
+      return disasm_simple("OP_TRUE", offset);
+    case OP_FALSE:
+      return disasm_simple("OP_FALSE", offset);
     case OP_NEGATE:
       return disasm_simple("OP_NEGATE", offset);
     case OP_ADD:
