@@ -180,11 +180,10 @@ static void concatenate_strings() {
   obj_string_t* first = AS_STRING(stack_pop());
 
   int length = first->length + second->length;
-  char* chars = ALLOCATE(char, length + 1);
-  memcpy(chars, first->chars, first->length);
-  memcpy(chars + first->length, second->chars, second->length);
-  chars[length] = '\0';
+  obj_string_t* result = string_allocate(length);
+  memcpy(result->chars, first->chars, first->length);
+  memcpy(result->chars + first->length, second->chars, second->length);
+  result->chars[length] = '\0';
 
-  obj_string_t* result = string_take(chars, length);
   stack_push(OBJ_VAL(result));
 }
