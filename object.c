@@ -10,21 +10,19 @@
 #define ALLOCATE_OBJ(type, object_type) \
   ((type*)object_allocate(sizeof(type), object_type))
 
+static obj_string_t* string_allocate(char* chars, int length);
 static obj_t* object_allocate(size_t size, obj_type_t type);
 static uint32_t hash_string(const char* str, int length);
 
-obj_string_t* string_allocate(int length) {
-  obj_string_t* string = (obj_string_t*)object_allocate(sizeof(obj_string_t) + length + 1, OBJ_STRING);
-  string->length = length;
-  return string;
+obj_string_t* string_copy(const char* chars, int length) {
+  char* heap_chars = ALLOCATE(char, length + 1);
+  memcpy(heap_chars, chars, length);
+  heap_chars[length] = '\0';
+  return string_allocate(heap_chars, length);
 }
 
-obj_string_t* string_copy(const char* chars, int length) {
-  obj_string_t* string = string_allocate(length);
-  memcpy(string->chars, chars, length);
-  string->chars[length] = '\0';
-  string_update_hash(string);
-  return string;
+obj_string_t* string_take(char* chars, int length) {
+  return string_allocate(chars, length);
 }
 
 void string_update_hash(obj_string_t* string) {
@@ -37,6 +35,13 @@ void object_print(value_t value) {
       printf("%s", AS_CSTRING(value));
       break;
   }
+}
+
+static obj_string_t* string_allocate(char* chars, int length) {
+  obj_string_t* string = ALLOCATE_OBJ(obj_string_t, OBJ_STRING);
+  string->length = length;
+  string->chars = chars;
+  return string;
 }
 
 static obj_t* object_allocate(size_t size, obj_type_t type) {

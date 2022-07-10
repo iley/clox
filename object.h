@@ -25,16 +25,15 @@ struct obj_string_t {
   obj_t obj;
   int length;
   uint32_t hash;
-  char chars[];
+  char* chars;
 };
 
 static inline bool is_obj_type(value_t value, obj_type_t type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 
-obj_string_t* string_allocate(int length);
 obj_string_t* string_copy(const char* chars, int length);
-void string_update_hash(obj_string_t* string);
+obj_string_t* string_take(char* chars, int length);
 void object_print(value_t value);
 
 #endif // _CLOX_OBJECT_H
