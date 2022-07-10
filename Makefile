@@ -1,5 +1,5 @@
 CC:=clang
-CFLAGS:=-std=c17 -Wall -Wextra -Werror -DDEBUG_PRINT_CODE
+CFLAGS:=-std=c17 -Wall -Wextra -Werror -DDEBUG_PRINT_CODE -g -fsanitize=address -fno-omit-frame-pointer
 # -DDEBUG_TRACE_EXECUTION 
 
 SRCS=chunk.c compiler.c debug.c memory.c object.c scanner.c value.c vm.c
