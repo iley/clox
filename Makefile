@@ -15,3 +15,4 @@ $(OBJS): %.o: %.c %.h
 
 clean:
 	rm -f clox $(OBJS)
+	rm -rf clox.dSYM
