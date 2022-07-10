@@ -38,5 +38,6 @@ void value_array_init(value_array_t *array);
 void value_array_free(value_array_t *array);
 void value_array_write(value_array_t *array, value_t value);
 void value_print(value_t value);
+bool values_equal(value_t first, value_t second);
 
 #endif // _CLOX_VALUE_H

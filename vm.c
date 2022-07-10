@@ -20,6 +20,7 @@ static void stack_reset();
 static void stack_debug_print();
 static value_t stack_peek(int distance);
 static void runtime_error(const char* format, ...);
+static bool is_falsey(value_t value);
 
 void vm_init() {
   stack_reset();
@@ -76,6 +77,14 @@ static execute_result_t vm_run() {
       case OP_NIL: stack_push(NIL_VAL); break;
       case OP_TRUE: stack_push(BOOL_VAL(true)); break;
       case OP_FALSE: stack_push(BOOL_VAL(false)); break;
+      case OP_EQUAL: {
+        value_t b = stack_pop();
+        value_t a = stack_pop(); 
+        stack_push(BOOL_VAL(values_equal(a, b)));
+        break;
+      }
+      case OP_GREATER: BINARY_OP(BOOL_VAL, >); break;
+      case OP_LESS:    BINARY_OP(BOOL_VAL, <); break;
       case OP_NEGATE:
         if (!IS_NUMBER(stack_peek(0))) {
           runtime_error("operand must be a number");
@@ -87,6 +96,9 @@ static execute_result_t vm_run() {
       case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
       case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
       case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
+      case OP_NOT:
+        stack_push(BOOL_VAL(is_falsey(stack_pop())));
+        break;
       case OP_RETURN:
         value_print(stack_pop());
         printf("\n");
@@ -142,4 +154,8 @@ static void runtime_error(const char* format, ...) {
   int line = vm.chunk->lines[instruction];
   fprintf(stderr, "[line %d] in script\n", line);
   stack_reset();
+}
+
+static bool is_falsey(value_t value) {
+  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
 }

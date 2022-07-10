@@ -40,3 +40,15 @@ void value_print(value_t value) {
       break;
   }
 }
+
+bool values_equal(value_t first, value_t second) {
+  if (first.type != second.type) {
+    return false;
+  }
+  switch (first.type) {
+    case VAL_BOOL:   return AS_BOOL(first) == AS_BOOL(second);
+    case VAL_NIL:    return true;
+    case VAL_NUMBER: return AS_NUMBER(first) == AS_NUMBER(second);
+    default:         return false;  // unreachable
+  }
+}
