@@ -1,6 +1,8 @@
 #ifndef _CLOX_OBJECT_H
 #define _CLOX_OBJECT_H
 
+#include <stdint.h>
+
 #include "value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
@@ -22,6 +24,7 @@ struct obj_t {
 struct obj_string_t {
   obj_t obj;
   int length;
+  uint32_t hash;
   char chars[];
 };
 
@@ -31,6 +34,7 @@ static inline bool is_obj_type(value_t value, obj_type_t type) {
 
 obj_string_t* string_allocate(int length);
 obj_string_t* string_copy(const char* chars, int length);
+void string_update_hash(obj_string_t* string);
 void object_print(value_t value);
 
 #endif // _CLOX_OBJECT_H

@@ -29,9 +29,11 @@ static void concatenate_strings();
 void vm_init() {
   stack_reset();
   vm.objects = NULL;
+  table_init(&vm.strings);
 }
 
 void vm_free() {
+  table_free(&vm.strings);
   free_objects();
 }
 
@@ -184,6 +186,7 @@ static void concatenate_strings() {
   memcpy(result->chars, first->chars, first->length);
   memcpy(result->chars + first->length, second->chars, second->length);
   result->chars[length] = '\0';
+  string_update_hash(result);
 
   stack_push(OBJ_VAL(result));
 }
