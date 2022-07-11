@@ -136,6 +136,15 @@ static execute_result_t vm_run() {
         stack_push(value);
         break;
       }
+      case OP_SET_GLOBAL: {
+        obj_string_t* name = READ_STRING();
+        if (table_set(&vm.globals, name, stack_peek(0))) {
+          table_delete(&vm.globals, name);
+          runtime_error("undefined variable %s", name->chars);
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_DEFINE_GLOBAL: {
         obj_string_t* name = READ_STRING();
         table_set(&vm.globals, name, stack_peek(0));
