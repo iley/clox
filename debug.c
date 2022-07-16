@@ -53,6 +53,8 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_jump_instruction("OP_JUMP", 1, chunk, offset);
     case OP_JUMP_IF_FALSE:
       return disasm_jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
+    case OP_LOOP:
+      return disasm_jump_instruction("OP_LOOP", -1, chunk, offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;

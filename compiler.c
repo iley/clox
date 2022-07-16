@@ -69,6 +69,7 @@ static void emit_return();
 static void emit_constant(value_t value);
 static int emit_jump(uint8_t instruction);
 static void patch_jump(int offset);
+static void emit_loop(int loop_start);
 static uint8_t make_constant(value_t value);
 static uint8_t identifier_constant(token_t* name);
 static uint8_t parse_variable(const char* error_message);
@@ -93,6 +94,7 @@ static void declaration();
 static void statement();
 static void print_statement();
 static void if_statement();
+static void while_statement();
 static void expression_statement();
 static void synchronize();
 static void var_declaration();
@@ -277,6 +279,18 @@ static void patch_jump(int offset) {
 
   current_chunk()->code[offset] = (jump >> 8) & 0xff;
   current_chunk()->code[offset + 1] = jump & 0xff;
+}
+
+static void emit_loop(int loop_start) {
+  emit_byte(OP_LOOP);
+
+  int offset = current_chunk()->count - loop_start + 2;
+  if (offset > UINT16_MAX) {
+    error("loop body too large");
+  }
+
+  emit_byte((offset >> 8) & 0xff);
+  emit_byte(offset & 0xff);
 }
 
 static uint8_t identifier_constant(token_t* name) {
@@ -492,6 +506,8 @@ static void statement() {
     print_statement();
   } else if (match(TOKEN_IF)) {
     if_statement();
+  } else if (match(TOKEN_WHILE)) {
+    while_statement();
   } else if (match(TOKEN_LEFT_BRACE)) {
     scope_begin();
     block();
@@ -525,6 +541,22 @@ static void if_statement() {
     statement();
   }
   patch_jump(else_jump);
+}
+
+static void while_statement() {
+  int loop_start = current_chunk()->count;
+
+  consume(TOKEN_LEFT_PAREN, "expected ( after while");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "expected ) after conidtion in while");
+
+  int exit_jump = emit_jump(OP_JUMP_IF_FALSE);
+  emit_byte(OP_POP);
+  statement();
+  emit_loop(loop_start);
+
+  patch_jump(exit_jump);
+  emit_byte(OP_POP);
 }
 
 static void expression_statement() {
