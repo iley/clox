@@ -5,6 +5,7 @@
 static int disasm_constant(const char* name, chunk_t* chunk, int offset);
 static int disasm_simple(const char* name, int offset);
 static int disasm_byte_instruction(const char* name, chunk_t* chunk, int offset);
+static int disasm_jump_instruction(const char* name, int sign, chunk_t* chunk, int offset);
 
 void disasm_chunk(chunk_t* chunk, const char* name) {
   printf("== %s ==\n", name);
@@ -48,6 +49,10 @@ int disasm_instruction(chunk_t* chunk, int offset) {
     case OP_SET_LOCAL:
       return disasm_byte_instruction("OP_SET_LOCAL", chunk, offset);
     case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
+    case OP_JUMP:
+      return disasm_jump_instruction("OP_JUMP", 1, chunk, offset);
+    case OP_JUMP_IF_FALSE:
+      return disasm_jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;
@@ -71,4 +76,11 @@ static int disasm_byte_instruction(const char* name, chunk_t* chunk, int offset)
   uint8_t slot = chunk->code[offset + 1];
   printf("%-16s %4d\n", name, slot);
   return offset + 2;
+}
+
+static int disasm_jump_instruction(const char* name, int sign, chunk_t* chunk, int offset) {
+  uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8);
+  jump |= chunk->code[offset + 2];
+  printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+  return offset + 3;
 }

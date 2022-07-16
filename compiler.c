@@ -67,6 +67,8 @@ static void emit_byte(uint8_t byte);
 static void emit_bytes(uint8_t byte1, uint8_t byte2);
 static void emit_return();
 static void emit_constant(value_t value);
+static int emit_jump(uint8_t instruction);
+static void patch_jump(int offset);
 static uint8_t make_constant(value_t value);
 static uint8_t identifier_constant(token_t* name);
 static uint8_t parse_variable(const char* error_message);
@@ -88,6 +90,7 @@ static void string(bool can_assign);
 static void declaration();
 static void statement();
 static void print_statement();
+static void if_statement();
 static void expression_statement();
 static void synchronize();
 static void var_declaration();
@@ -254,6 +257,24 @@ static void emit_return() {
 
 static void emit_constant(value_t value) {
   emit_bytes(OP_CONSTANT, make_constant(value));
+}
+
+static int emit_jump(uint8_t instruction) {
+  emit_byte(instruction);
+  emit_byte(0xff);
+  emit_byte(0xff);
+  return current_chunk()->count - 2;
+}
+
+static void patch_jump(int offset) {
+  // -2 adjusts for bytecode of the jump offset itself
+  int jump = current_chunk()->count - offset - 2;
+  if (jump > UINT16_MAX) {
+    error("too much code to jump over");
+  }
+
+  current_chunk()->code[offset] = (jump >> 8) & 0xff;
+  current_chunk()->code[offset + 1] = jump & 0xff;
 }
 
 static uint8_t identifier_constant(token_t* name) {
@@ -447,6 +468,8 @@ static void declaration() {
 static void statement() {
   if (match(TOKEN_PRINT)) {
     print_statement();
+  } else if (match(TOKEN_IF)) {
+    if_statement();
   } else if (match(TOKEN_LEFT_BRACE)) {
     scope_begin();
     block();
@@ -460,6 +483,26 @@ static void print_statement() {
   expression();
   consume(TOKEN_SEMICOLON, "expected ; after value in print statement");
   emit_byte(OP_PRINT);
+}
+
+static void if_statement() {
+  consume(TOKEN_LEFT_PAREN, "expected ( after if");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "expected ) after condition in if");
+
+  int then_jump = emit_jump(OP_JUMP_IF_FALSE);
+  emit_byte(OP_POP);
+  statement();
+
+  int else_jump = emit_jump(OP_JUMP);
+
+  patch_jump(then_jump);
+  emit_byte(OP_POP);
+
+  if (match(TOKEN_ELSE)) {
+    statement();
+  }
+  patch_jump(else_jump);
 }
 
 static void expression_statement() {
