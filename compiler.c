@@ -82,6 +82,8 @@ static void parse_precedence(precedence_t precedence);
 static parse_rule_t* get_rule(token_type_t type);
 static void expression();
 static void number(bool can_assign);
+static void and_(bool can_assign);
+static void or_(bool can_assign);
 static void grouping(bool can_assign);
 static void unary(bool can_assign);
 static void binary(bool can_assign);
@@ -127,7 +129,7 @@ parse_rule_t rules[] = {
   [TOKEN_IDENTIFIER]    = { variable, NULL,   PREC_NONE },
   [TOKEN_STRING]        = { string,   NULL,   PREC_NONE },
   [TOKEN_NUMBER]        = { number,   NULL,   PREC_NONE },
-  [TOKEN_AND]           = { NULL,     NULL,   PREC_NONE },
+  [TOKEN_AND]           = { NULL,     and_,   PREC_AND },
   [TOKEN_CLASS]         = { NULL,     NULL,   PREC_NONE },
   [TOKEN_ELSE]          = { NULL,     NULL,   PREC_NONE },
   [TOKEN_FALSE]         = { literal,  NULL,   PREC_NONE },
@@ -135,7 +137,7 @@ parse_rule_t rules[] = {
   [TOKEN_FUN]           = { NULL,     NULL,   PREC_NONE },
   [TOKEN_IF]            = { NULL,     NULL,   PREC_NONE },
   [TOKEN_NIL]           = { literal,  NULL,   PREC_NONE },
-  [TOKEN_OR]            = { NULL,     NULL,   PREC_NONE },
+  [TOKEN_OR]            = { NULL,     or_,    PREC_OR },
   [TOKEN_PRINT]         = { NULL,     NULL,   PREC_NONE },
   [TOKEN_RETURN]        = { NULL,     NULL,   PREC_NONE },
   [TOKEN_SUPER]         = { NULL,     NULL,   PREC_NONE },
@@ -399,6 +401,26 @@ static void number(bool can_assign) {
   (void)can_assign; // unused
   double value = strtod(parser.previous.start, NULL);
   emit_constant(NUMBER_VAL(value));
+}
+
+static void and_(bool can_assign) {
+  (void)can_assign; // unused
+  int end_jump = emit_jump(OP_JUMP_IF_FALSE);
+  emit_byte(OP_POP);
+  parse_precedence(PREC_AND);
+  patch_jump(end_jump);
+}
+
+static void or_(bool can_assign) {
+  (void)can_assign; // unused
+  int else_jump = emit_jump(OP_JUMP_IF_FALSE);
+  int end_jump = emit_jump(OP_JUMP);
+
+  patch_jump(else_jump);
+  emit_byte(OP_POP);
+
+  parse_precedence(PREC_OR);
+  patch_jump(end_jump);
 }
 
 static void grouping(bool can_assign) {
