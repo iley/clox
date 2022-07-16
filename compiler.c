@@ -95,6 +95,7 @@ static void statement();
 static void print_statement();
 static void if_statement();
 static void while_statement();
+static void for_statement();
 static void expression_statement();
 static void synchronize();
 static void var_declaration();
@@ -508,6 +509,8 @@ static void statement() {
     if_statement();
   } else if (match(TOKEN_WHILE)) {
     while_statement();
+  } else if (match(TOKEN_FOR)) {
+    for_statement();
   } else if (match(TOKEN_LEFT_BRACE)) {
     scope_begin();
     block();
@@ -557,6 +560,51 @@ static void while_statement() {
 
   patch_jump(exit_jump);
   emit_byte(OP_POP);
+}
+
+static void for_statement() {
+  scope_begin();
+  consume(TOKEN_LEFT_PAREN, "expected ( after for");
+
+  if (match(TOKEN_SEMICOLON)) {
+    // no initializer
+  } else if (match(TOKEN_VAR)) {
+    var_declaration();
+  } else {
+    expression_statement();
+  }
+
+  int loop_start = current_chunk()->count;
+  int exit_jump = -1;
+  if (!match(TOKEN_SEMICOLON)) {
+    expression();
+    consume(TOKEN_SEMICOLON, "expected ; after loop condition");
+
+    exit_jump = emit_jump(OP_JUMP_IF_FALSE);
+    emit_byte(OP_POP); // condition
+  }
+
+  if (!match(TOKEN_RIGHT_PAREN)) {
+    int body_jump = emit_jump(OP_JUMP);
+    int increment_start = current_chunk()->count;
+    expression();
+    emit_byte(OP_POP);
+    consume(TOKEN_RIGHT_PAREN, "expect ) after for clauses");
+
+    emit_loop(loop_start);
+    loop_start = increment_start;
+    patch_jump(body_jump);
+  }
+
+  statement();
+  emit_loop(loop_start);
+
+  if (exit_jump != -1) {
+    patch_jump(exit_jump);
+    emit_byte(OP_POP);
+  }
+
+  scope_end();
 }
 
 static void expression_statement() {
