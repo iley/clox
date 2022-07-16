@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "debug.h"
+#include "limits.h"
 #include "object.h"
 #include "scanner.h"
 #include "value.h"
@@ -39,7 +41,19 @@ typedef struct {
   precedence_t precedence;
 } parse_rule_t;
 
+typedef struct {
+  token_t name;
+  int depth;
+} local_t;
+
+typedef struct {
+  local_t locals[MAX_LOCALS];
+  int local_count;
+  int scope_depth;
+} compiler_t;
+
 // Forward declarations.
+static void compiler_init(compiler_t* compiler);
 static void advance();
 static void consume(token_type_t type, const char* message);
 static bool match(token_type_t type);
@@ -57,6 +71,11 @@ static uint8_t make_constant(value_t value);
 static uint8_t identifier_constant(token_t* name);
 static uint8_t parse_variable(const char* error_message);
 static void define_variable(uint8_t global);
+static void declare_variable();
+static void mark_initialized();
+static void add_local(token_t name);
+static int resolve_local(compiler_t* compiler, token_t* name);
+static bool identifiers_equal(token_t* first, token_t* second);
 static void parse_precedence(precedence_t precedence);
 static parse_rule_t* get_rule(token_type_t type);
 static void expression();
@@ -74,8 +93,12 @@ static void synchronize();
 static void var_declaration();
 static void variable(bool can_assign);
 static void named_variable(token_t name, bool can_assign);
+static void block();
+static void scope_begin();
+static void scope_end();
 
 parser_t parser;
+compiler_t* current = NULL;
 chunk_t* compiling_chunk;
 
 parse_rule_t rules[] = {
@@ -124,6 +147,9 @@ parse_rule_t rules[] = {
 bool compile(const char* source, chunk_t* chunk) {
   scanner_init(source);
 
+  compiler_t compiler;
+  compiler_init(&compiler);
+
   compiling_chunk = chunk;
   parser.had_error = false;
   parser.panic_mode = false;
@@ -136,6 +162,12 @@ bool compile(const char* source, chunk_t* chunk) {
 
   compiler_end();
   return !parser.had_error;
+}
+
+static void compiler_init(compiler_t* compiler) {
+  compiler->local_count = 0;
+  compiler->scope_depth = 0;
+  current = compiler;
 }
 
 static void advance() {
@@ -239,11 +271,77 @@ static uint8_t make_constant(value_t value) {
 
 static uint8_t parse_variable(const char* error_message) {
   consume(TOKEN_IDENTIFIER, error_message);
+
+  declare_variable();
+  if (current->scope_depth > 0) {
+    return 0;
+  }
+
   return identifier_constant(&parser.previous);
 }
 
 static void define_variable(uint8_t global) {
+  if (current->scope_depth > 0) {
+    mark_initialized();
+    return;
+  }
+
   emit_bytes(OP_DEFINE_GLOBAL, global);
+}
+
+static void declare_variable() {
+  if (current->scope_depth == 0) {
+    return;
+  }
+
+  token_t* name = &parser.previous;
+
+  for (int i = current->local_count - 1; i >= 0; i--) {
+    local_t* local = &current->locals[i];
+    if (local->depth != -1 && local->depth < current->scope_depth) {
+      break;
+    }
+
+    if (identifiers_equal(name, &local->name)) {
+      error("there's already a variable with the same name in current scope");
+    }
+  }
+
+  add_local(*name);
+}
+
+static void mark_initialized() {
+  current->locals[current->local_count - 1].depth = current->scope_depth;
+}
+
+static bool identifiers_equal(token_t* first, token_t* second) {
+  if (first->length != second->length) {
+    return false;
+  }
+  return memcmp(first->start, second->start, first->length) == 0;
+}
+
+static void add_local(token_t name) {
+  if (current->local_count == MAX_LOCALS) {
+    error("too many local variables\n");
+    return;
+  }
+  local_t* local = &current->locals[current->local_count++];
+  local->name = name;
+  local->depth = -1;
+}
+
+static int resolve_local(compiler_t* compiler, token_t* name) {
+  for (int i = compiler->local_count - 1; i >= 0; i--) {
+    local_t* local = &compiler->locals[i];
+    if (identifiers_equal(name, &local->name)) {
+      if (local->depth == -1) {
+        error("can't read local variable in its own initializer");
+      }
+      return i;
+    }
+  }
+  return -1;
 }
 
 static void parse_precedence(precedence_t precedence) {
@@ -349,6 +447,10 @@ static void declaration() {
 static void statement() {
   if (match(TOKEN_PRINT)) {
     print_statement();
+  } else if (match(TOKEN_LEFT_BRACE)) {
+    scope_begin();
+    block();
+    scope_end();
   } else {
     expression_statement();
   }
@@ -411,11 +513,43 @@ static void variable(bool can_assign) {
 }
 
 static void named_variable(token_t name, bool can_assign) {
-  uint8_t arg = identifier_constant(&name);
+  uint8_t get_op, set_op;
+  int arg = resolve_local(current, &name);
+
+  if (arg != -1) {
+    get_op = OP_GET_LOCAL;
+    set_op = OP_SET_LOCAL;
+  } else {
+    arg = identifier_constant(&name);
+    get_op = OP_GET_GLOBAL;
+    set_op = OP_SET_GLOBAL;
+  }
+
   if (can_assign && match(TOKEN_EQUAL)) {
     expression();
-    emit_bytes(OP_SET_GLOBAL, arg);
+    emit_bytes(set_op, (uint8_t)arg);
   } else {
-    emit_bytes(OP_GET_GLOBAL, arg);
+    emit_bytes(get_op, (uint8_t)arg);
+  }
+}
+
+static void block() {
+  while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+    declaration();
+  }
+  consume(TOKEN_RIGHT_BRACE, "expected } after block");
+}
+
+static void scope_begin() {
+  current->scope_depth++;
+}
+
+static void scope_end() {
+  current->scope_depth--;
+
+  while (current->local_count > 0 &&
+         current->locals[current->local_count - 1].depth > current->scope_depth) {
+    emit_byte(OP_POP);
+    current->local_count--;
   }
 }

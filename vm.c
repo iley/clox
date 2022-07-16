@@ -126,6 +126,12 @@ static execute_result_t vm_run() {
       case OP_POP:
         stack_pop();
         break;
+      case OP_DEFINE_GLOBAL: {
+        obj_string_t* name = READ_STRING();
+        table_set(&vm.globals, name, stack_peek(0));
+        stack_pop();
+        break;
+      }
       case OP_GET_GLOBAL: {
         obj_string_t* name = READ_STRING();
         value_t value;
@@ -145,10 +151,14 @@ static execute_result_t vm_run() {
         }
         break;
       }
-      case OP_DEFINE_GLOBAL: {
-        obj_string_t* name = READ_STRING();
-        table_set(&vm.globals, name, stack_peek(0));
-        stack_pop();
+      case OP_GET_LOCAL: {
+        uint8_t slot = READ_BYTE();
+        stack_push(vm.stack[slot]);
+        break;
+      }
+      case OP_SET_LOCAL: {
+        uint8_t slot = READ_BYTE();
+        vm.stack[slot] = stack_peek(0);
         break;
       }
       case OP_RETURN:
