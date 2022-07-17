@@ -40,6 +40,13 @@ void free_object(obj_t* object) {
       obj_string_t* string = (obj_string_t*)object;
       FREE_ARRAY(char, string->chars, string->length + 1);
       FREE(obj_string_t, object);
+      break;
+    }
+    case OBJ_FUNCTION: {
+      obj_function_t* function = (obj_function_t*)object;
+      chunk_free(&function->chunk);
+      FREE(obj_function_t, object);
+      break;
     }
   }
 }

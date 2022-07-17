@@ -4,7 +4,8 @@
 #include <stdbool.h>
 
 #include "chunk.h"
+#include "object.h"
 
-bool compile(const char* source, chunk_t* chunk);
+obj_function_t* compile(const char* source);
 
 #endif // _CLOX_COMPILER_H

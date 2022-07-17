@@ -14,6 +14,7 @@
 static obj_string_t* string_allocate(char* chars, int length, uint32_t hash);
 static obj_t* object_allocate(size_t size, obj_type_t type);
 static uint32_t hash_string(const char* str, int length);
+static void function_print(obj_function_t* function);
 
 obj_string_t* string_copy(const char* chars, int length) {
   uint32_t hash = hash_string(chars, length);
@@ -41,10 +42,21 @@ obj_string_t* string_take(char* chars, int length) {
   return string_allocate(chars, length, hash);
 }
 
+obj_function_t* function_new() {
+  obj_function_t* function = ALLOCATE_OBJ(obj_function_t, OBJ_FUNCTION);
+  function->arity = 0;
+  function->name = NULL;
+  chunk_init(&function->chunk);
+  return function;
+}
+
 void object_print(value_t value) {
   switch (OBJ_TYPE(value)) {
     case OBJ_STRING:
       printf("%s", AS_CSTRING(value));
+      break;
+    case OBJ_FUNCTION:
+      function_print(AS_FUNCTION(value));
       break;
   }
 }
@@ -75,4 +87,12 @@ static uint32_t hash_string(const char* str, int length) {
     hash *= 16777619;
   }
   return hash;
+}
+
+static void function_print(obj_function_t* function) {
+  if (function->name == NULL) {
+    printf("<script>");
+    return;
+  }
+  printf("<fn %s>", function->name->chars);
 }

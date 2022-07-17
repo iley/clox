@@ -1,6 +1,8 @@
 #ifndef _CLOX_LIMITS_H
 #define _CLOX_LIMITS_H
 
-#define MAX_LOCALS (UINT8_MAX+1)
+#define LOCALS_MAX (UINT8_MAX+1)
+#define STACK_MAX (FRAMES_MAX*LOCALS_MAX)
+#define FRAMES_MAX 64
 
 #endif // _CLOX_LIMITS_H
