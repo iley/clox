@@ -50,6 +50,13 @@ obj_function_t* function_new() {
   return function;
 }
 
+obj_native_t* native_new(native_fn_t function, int arity) {
+  obj_native_t* native = ALLOCATE_OBJ(obj_native_t, OBJ_NATIVE);
+  native->function = function;
+  native->arity = arity;
+  return native;
+}
+
 void object_print(value_t value) {
   switch (OBJ_TYPE(value)) {
     case OBJ_STRING:
@@ -57,6 +64,9 @@ void object_print(value_t value) {
       break;
     case OBJ_FUNCTION:
       function_print(AS_FUNCTION(value));
+      break;
+    case OBJ_NATIVE:
+      printf("<native fn>");
       break;
   }
 }

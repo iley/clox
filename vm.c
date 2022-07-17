@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "compiler.h"
 #include "object.h"
@@ -27,12 +28,16 @@ static bool is_falsey(value_t value);
 static void concatenate_strings();
 static bool call_value(value_t callee, int arg_count);
 static bool call(obj_function_t* function, int arg_count);
+static void native_define(const char* name, int arity, native_fn_t function);
+static value_t native_clock(int arg_count, value_t* args);
 
 void vm_init() {
   stack_reset();
   vm.objects = NULL;
   table_init(&vm.globals);
   table_init(&vm.strings);
+
+  native_define("clock", 0, native_clock);
 }
 
 void vm_free() {
@@ -304,6 +309,17 @@ static bool call_value(value_t callee, int arg_count) {
     switch (OBJ_TYPE(callee)) {
       case OBJ_FUNCTION:
         return call(AS_FUNCTION(callee), arg_count);
+      case OBJ_NATIVE: {
+        obj_native_t* native = AS_NATIVE(callee);
+        if (arg_count != native->arity) {
+          runtime_error("expected %d arguments for native function, got %d", native->arity, arg_count);
+          return false;
+        }
+        value_t result = native->function(arg_count, vm.stack_top - arg_count);
+        vm.stack_top -= arg_count + 1;
+        stack_push(result);
+        return true;
+      }
       default:
         break;
     }
@@ -329,4 +345,18 @@ static bool call(obj_function_t* function, int arg_count) {
   frame->slots = vm.stack_top - arg_count - 1;
 
   return true;
+}
+
+static void native_define(const char* name, int arity, native_fn_t function) {
+  stack_push(OBJ_VAL(string_copy(name, (int)strlen(name))));
+  stack_push(OBJ_VAL(native_new(function, arity)));
+  table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+  stack_pop();
+  stack_pop();
+}
+
+static value_t native_clock(int arg_count, value_t* args) {
+  (void)arg_count; // unused
+  (void)args; // unused
+  return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
