@@ -132,6 +132,7 @@ parse_rule_t rules[] = {
   [TOKEN_PLUS]          = { NULL,     binary, PREC_TERM },
   [TOKEN_SEMICOLON]     = { NULL,     NULL,   PREC_NONE },
   [TOKEN_SLASH]         = { NULL,     binary, PREC_FACTOR },
+  [TOKEN_PERCENT]       = { NULL,     binary, PREC_FACTOR },
   [TOKEN_STAR]          = { NULL,     binary, PREC_FACTOR },
   [TOKEN_BANG]          = { unary,    NULL,   PREC_NONE },
   [TOKEN_BANG_EQUAL]    = { NULL,     binary, PREC_EQUALITY },
@@ -511,6 +512,7 @@ static void binary(bool can_assign) {
     case TOKEN_MINUS:         emit_byte(OP_SUBTRACT); break;
     case TOKEN_STAR:          emit_byte(OP_MULTIPLY); break;
     case TOKEN_SLASH:         emit_byte(OP_DIVIDE); break;
+    case TOKEN_PERCENT:       emit_byte(OP_MODULO); break;
     case TOKEN_BANG_EQUAL:    emit_bytes(OP_EQUAL, OP_NOT); break;
     case TOKEN_EQUAL_EQUAL:   emit_byte(OP_EQUAL); break;
     case TOKEN_GREATER:       emit_byte(OP_GREATER); break;

@@ -32,6 +32,7 @@ int disasm_instruction(chunk_t* chunk, int offset) {
     case OP_SUBTRACT: return disasm_simple("OP_SUBTRACT", offset);
     case OP_MULTIPLY: return disasm_simple("OP_MULTIPLY", offset);
     case OP_DIVIDE:   return disasm_simple("OP_DIVIDE", offset);
+    case OP_MODULO:   return disasm_simple("OP_MODULO", offset);
     case OP_NOT:      return disasm_simple("OP_NOT", offset);
     case OP_EQUAL:    return disasm_simple("OP_EQUAL", offset);
     case OP_GREATER:  return disasm_simple("OP_GREATER", offset);

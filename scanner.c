@@ -72,6 +72,7 @@ token_t scanner_scan_token() {
     case '>':
       return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
     case '/': return make_token(TOKEN_SLASH);
+    case '%': return make_token(TOKEN_PERCENT);
     case '"': return string();
   }
 

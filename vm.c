@@ -118,6 +118,17 @@ static execute_result_t vm_run() {
       case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
       case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
       case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
+      case OP_MODULO: {
+        if (!IS_NUMBER(stack_peek(0)) || !IS_NUMBER(stack_peek(1))) {
+          runtime_error("operands must be numbers");
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        int b = (int)AS_NUMBER(stack_pop());
+        int a = (int)AS_NUMBER(stack_pop());
+        double result = a % b;
+        stack_push(NUMBER_VAL((double)result));
+        break;
+      }
       case OP_NOT:
         stack_push(BOOL_VAL(is_falsey(stack_pop())));
         break;
