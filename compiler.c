@@ -48,15 +48,22 @@ typedef struct {
 typedef struct {
   token_t name;
   int depth;
+  bool is_captured;
 } local_t;
 
 typedef struct {
+  uint8_t index;
+  bool is_local;
+} upvalue_t;
+
+typedef struct compiler_t {
   struct compiler_t* enclosing;
   obj_function_t* function;
   function_type_t type;
 
   local_t locals[LOCALS_MAX];
   int local_count;
+  upvalue_t upvalues[UINT8_COUNT];
   int scope_depth;
 } compiler_t;
 
@@ -87,6 +94,8 @@ static void declare_variable();
 static void mark_initialized();
 static void add_local(token_t name);
 static int resolve_local(compiler_t* compiler, token_t* name);
+static int add_upvalue(compiler_t* compiler, uint8_t index, bool is_local);
+static int resolve_upvalue(compiler_t* compiler, token_t* name);
 static bool identifiers_equal(token_t* first, token_t* second);
 static void parse_precedence(precedence_t precedence);
 static parse_rule_t* get_rule(token_type_t type);
@@ -121,6 +130,7 @@ static void scope_end();
 parser_t parser;
 compiler_t* current = NULL;
 
+// Rules table.
 parse_rule_t rules[] = {
   [TOKEN_LEFT_PAREN]    = { grouping, call,   PREC_CALL },
   [TOKEN_RIGHT_PAREN]   = { NULL,     NULL,   PREC_NONE },
@@ -199,6 +209,7 @@ static void compiler_init(compiler_t* compiler, function_type_t type) {
 
   local_t* local = &current->locals[current->local_count++];
   local->depth = 0;
+  local->is_captured = false;
   local->name.start = "";
   local->name.length = 0;
 }
@@ -414,6 +425,7 @@ static void add_local(token_t name) {
   local_t* local = &current->locals[current->local_count++];
   local->name = name;
   local->depth = -1;
+  local->is_captured = false;
 }
 
 static int resolve_local(compiler_t* compiler, token_t* name) {
@@ -426,6 +438,45 @@ static int resolve_local(compiler_t* compiler, token_t* name) {
       return i;
     }
   }
+  return -1;
+}
+
+static int add_upvalue(compiler_t* compiler, uint8_t index, bool is_local) {
+  int upvalue_count = compiler->function->upvalue_count;
+
+  for (int i = 0; i < upvalue_count; i++) {
+    upvalue_t* upvalue = &compiler->upvalues[i];
+    if (upvalue->index == index && upvalue->is_local == is_local) {
+      return i;
+    }
+  }
+
+  if (upvalue_count == UINT8_COUNT) {
+    error("too many closure variables in function");
+    return 0;
+  }
+
+  compiler->upvalues[upvalue_count].is_local = is_local;
+  compiler->upvalues[upvalue_count].index = index;
+  return compiler->function->upvalue_count++;
+}
+
+static int resolve_upvalue(compiler_t* compiler, token_t* name) {
+  if (compiler->enclosing == NULL) {
+    return -1;
+  }
+
+  int local = resolve_local((compiler->enclosing), name);
+  if (local != -1) {
+    compiler->enclosing->locals[local].is_captured = true;
+    return add_upvalue(compiler, (uint8_t)local, true);
+  }
+
+  int upvalue = resolve_upvalue((compiler->enclosing), name);
+  if (upvalue != -1) {
+    return add_upvalue(compiler, (uint8_t)upvalue, false);
+  }
+
   return -1;
 }
 
@@ -713,7 +764,12 @@ static void function(function_type_t type) {
   block();
 
   obj_function_t* function = compiler_end();
-  emit_bytes(OP_CONSTANT, make_constant(OBJ_VAL(function)));
+  emit_bytes(OP_CLOSURE, make_constant(OBJ_VAL(function)));
+
+  for (int i = 0; i < function->upvalue_count; i++) {
+    emit_byte(compiler.upvalues[i].is_local ? 1 : 0);
+    emit_byte(compiler.upvalues[i].index);
+  }
 }
 
 static void synchronize() {
@@ -767,6 +823,9 @@ static void named_variable(token_t name, bool can_assign) {
   if (arg != -1) {
     get_op = OP_GET_LOCAL;
     set_op = OP_SET_LOCAL;
+  } else if ((arg = resolve_upvalue(current, &name)) != -1) {
+    get_op = OP_GET_UPVALUE;
+    set_op = OP_SET_UPVALUE;
   } else {
     arg = identifier_constant(&name);
     get_op = OP_GET_GLOBAL;
@@ -797,7 +856,11 @@ static void scope_end() {
 
   while (current->local_count > 0 &&
          current->locals[current->local_count - 1].depth > current->scope_depth) {
-    emit_byte(OP_POP);
+    if (current->locals[current->local_count - 1].is_captured) {
+      emit_byte(OP_CLOSE_UPVALUE);
+    } else {
+      emit_byte(OP_POP);
+    }
     current->local_count--;
   }
 }

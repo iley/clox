@@ -6,3 +6,21 @@ fun add(x, y) {
 }
 
 print add(40, 5);
+
+fun make_counter() {
+  var count = 0;
+
+  fun closure() {
+    var res = count;
+    count = count + 1;
+    return res;
+  }
+
+  return closure;
+}
+
+var c = make_counter();
+print c();
+print c();
+print c();
+print c();

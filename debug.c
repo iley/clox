@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "object.h"
+
 static int disasm_constant(const char* name, chunk_t* chunk, int offset);
 static int disasm_simple(const char* name, int offset);
 static int disasm_byte_instruction(const char* name, chunk_t* chunk, int offset);
@@ -49,6 +51,10 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_byte_instruction("OP_GET_LOCAL", chunk, offset);
     case OP_SET_LOCAL:
       return disasm_byte_instruction("OP_SET_LOCAL", chunk, offset);
+    case OP_GET_UPVALUE:
+      return disasm_byte_instruction("OP_GET_UPVALUE", chunk, offset);
+    case OP_SET_UPVALUE:
+      return disasm_byte_instruction("OP_SET_UPVALUE", chunk, offset);
     case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
     case OP_JUMP:
       return disasm_jump_instruction("OP_JUMP", 1, chunk, offset);
@@ -58,6 +64,25 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_jump_instruction("OP_LOOP", -1, chunk, offset);
     case OP_CALL:
       return disasm_byte_instruction("OP_CALL", chunk, offset);
+    case OP_CLOSURE: {
+      offset++;
+      uint8_t constant = chunk->code[offset++];
+      printf("%-16s %4d ", "OP_CLOSURE", constant);
+      value_print(chunk->constants.values[constant]);
+      printf("\n");
+
+      obj_function_t* function = AS_FUNCTION(chunk->constants.values[constant]);
+      for (int j = 0; j < function->upvalue_count; j++) {
+        int is_local = chunk->code[offset++];
+        int index = chunk->code[offset++];
+        printf("%04d      |                     %s %d\n",
+            offset - 2, is_local ? "local  " : "upvalue", index);
+      }
+
+      return offset;
+    }
+    case OP_CLOSE_UPVALUE:
+      return disasm_simple("OP_CLOSE_UPVALUE", offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;
