@@ -104,16 +104,24 @@ static obj_string_t* string_allocate(char* chars, int length, uint32_t hash) {
   string->length = length;
   string->chars = chars;
   string->hash = hash;
+
+  stack_push(OBJ_VAL(string));
   table_set(&vm.strings, string, NIL_VAL);
+  stack_pop();
   return string;
 }
 
 static obj_t* object_allocate(size_t size, obj_type_t type) {
   obj_t* object = (obj_t*)reallocate(NULL, 0, size);
   object->type = type;
+  object->is_marked = false;
 
   object->next = vm.objects;
   vm.objects = object;
+
+#ifdef DEBUG_LOG_GC
+  printf("%p allocate %zu for %d\n", (void*)object, size, type);
+#endif // DEBUG_LOG_GC
 
   return object;
 }

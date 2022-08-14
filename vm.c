@@ -35,7 +35,14 @@ static void close_upvalues(value_t* last);
 
 void vm_init() {
   stack_reset();
+  vm.bytes_allocated = 0;
+  vm.next_gc = 1024 * 1024;
   vm.objects = NULL;
+
+  vm.gray_count = 0;
+  vm.gray_capacity = 0;
+  vm.gray_stack = NULL;
+
   table_init(&vm.globals);
   table_init(&vm.strings);
 
@@ -327,8 +334,8 @@ static bool is_falsey(value_t value) {
 }
 
 static void concatenate_strings() {
-  obj_string_t* second = AS_STRING(stack_pop());
-  obj_string_t* first = AS_STRING(stack_pop());
+  obj_string_t* second = AS_STRING(stack_peek(0));
+  obj_string_t* first = AS_STRING(stack_peek(0));
 
   int length = first->length + second->length;
   char* chars = ALLOCATE(char, length + 1);
@@ -337,6 +344,8 @@ static void concatenate_strings() {
   chars[length] = '\0';
 
   obj_string_t* result = string_take(chars, length);
+  stack_pop();
+  stack_pop();
   stack_push(OBJ_VAL(result));
 }
 

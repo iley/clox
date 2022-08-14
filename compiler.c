@@ -8,6 +8,7 @@
 
 #include "debug.h"
 #include "limits.h"
+#include "memory.h"
 #include "scanner.h"
 #include "value.h"
 
@@ -192,6 +193,14 @@ obj_function_t* compile(const char* source) {
 
   obj_function_t* function = compiler_end();
   return parser.had_error ? NULL : function;
+}
+
+void mark_compiler_roots() {
+  compiler_t* compiler = current;
+  while (compiler != NULL) {
+    mark_object((obj_t*)compiler->function);
+    compiler = compiler->enclosing;
+  }
 }
 
 static void compiler_init(compiler_t* compiler, function_type_t type) {

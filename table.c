@@ -104,6 +104,23 @@ obj_string_t* table_find_string(table_t* table, const char* chars, int length, u
   }
 }
 
+void mark_table(table_t* table) {
+  for (int i = 0; i < table->capacity; i++) {
+    entry_t* entry = &table->entries[i];
+    mark_object((obj_t*)entry->key);
+    mark_value(entry->value);
+  }
+}
+
+void table_remove_white(table_t* table) {
+  for (int i = 0; i < table->capacity; i++) {
+    entry_t* entry = &table->entries[i];
+    if (entry->key != NULL && !entry->key->obj.is_marked) {
+      table_delete(table, entry->key);
+    }
+  }
+}
+
 static entry_t* find_entry(entry_t* entries, int capacity, obj_string_t* key) {
   uint32_t index = key->hash % capacity;
   entry_t* tombstone = NULL;
