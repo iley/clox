@@ -85,6 +85,10 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_simple("OP_CLOSE_UPVALUE", offset);
     case OP_CLASS:
       return disasm_constant("OP_CLASS", chunk, offset);
+    case OP_SET_PROPERTY:
+      return disasm_constant("OP_SET_PROPERTY", chunk, offset);
+    case OP_GET_PROPERTY:
+      return disasm_constant("OP_GET_PROPERTY", chunk, offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;

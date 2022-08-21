@@ -261,6 +261,39 @@ static execute_result_t vm_run() {
         break;
       case OP_CLASS:
         stack_push(OBJ_VAL(class_new(READ_STRING())));
+        break;
+      case OP_GET_PROPERTY: {
+        if (!IS_INSTANCE(stack_peek(0))) {
+          runtime_error("only instances have properties");
+          return EXECUTE_RUNTIME_ERROR;
+        }
+
+        obj_instance_t* instance = AS_INSTANCE(stack_peek(0));
+        obj_string_t* name = READ_STRING();
+
+        value_t value;
+        if (table_get(&instance->fields, name, &value)) {
+          stack_pop();
+          stack_push(value);
+          break;
+        }
+
+        runtime_error("undefined property %s", name->chars);
+        return EXECUTE_RUNTIME_ERROR;
+      }
+      case OP_SET_PROPERTY: {
+        if (!IS_INSTANCE(stack_peek(1))) {
+          runtime_error("only instances have properties");
+          return EXECUTE_RUNTIME_ERROR;
+        }
+
+        obj_instance_t* instance = AS_INSTANCE(stack_peek(1));
+        table_set(&instance->fields, READ_STRING(), stack_peek(0));
+        value_t value = stack_pop();
+        stack_pop();
+        stack_push(value);
+        break;
+      }
     }
   }
 
