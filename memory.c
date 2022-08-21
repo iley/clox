@@ -138,10 +138,16 @@ void free_object(obj_t* object) {
       FREE_ARRAY(obj_upvalue_t*, closure->upvalues, closure->upvalue_count);
       FREE(obj_closure_t, object);
       break;
+    }
     case OBJ_CLASS: {
       FREE(obj_class_t, object);
       break;
     }
+    case OBJ_INSTANCE: {
+      obj_instance_t* instance = (obj_instance_t*)object;
+      table_free(&instance->fields);
+      FREE(obj_instance_t, object);
+      break;
     }
   }
 }
@@ -201,6 +207,12 @@ static void blacken_object(obj_t* object) {
     case OBJ_CLASS: {
       obj_class_t* klass = (obj_class_t*)object;
       mark_object((obj_t*)klass->name);
+      break;
+    }
+    case OBJ_INSTANCE: {
+      obj_instance_t* instance = (obj_instance_t*)object;
+      mark_object((obj_t*)instance->klass);
+      mark_table(&instance->fields);
       break;
     }
     case OBJ_CLOSURE: {

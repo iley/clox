@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "chunk.h"
+#include "table.h"
 #include "value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
@@ -13,6 +14,7 @@
 #define IS_NATIVE(value) is_obj_type(value, OBJ_NATIVE)
 #define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
 #define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
+#define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
 #define IS_UPVALUE(VALUE) is_obj_type(value, OBJ_UPVALUE)
 
 #define AS_STRING(value)  ((obj_string_t*)AS_OBJ(value))
@@ -21,6 +23,7 @@
 #define AS_NATIVE(value) ((obj_native_t*)AS_OBJ(value))
 #define AS_CLOSURE(value) ((obj_closure_t*)AS_OBJ(value))
 #define AS_CLASS(value) ((obj_class_t*)AS_OBJ(value))
+#define AS_INSTANCE(value) ((obj_instance_t*)AS_OBJ(value))
 #define AS_UPVALUE(value) ((obj_upvalue_t*)AS_OBJ(value))
 
 typedef enum {
@@ -30,6 +33,7 @@ typedef enum {
   OBJ_NATIVE,
   OBJ_CLOSURE,
   OBJ_CLASS,
+  OBJ_INSTANCE,
 } obj_type_t;
 
 struct obj_t {
@@ -80,6 +84,12 @@ typedef struct {
   obj_string_t* name;
 } obj_class_t;
 
+typedef struct {
+  obj_t obj;
+  obj_class_t* klass;
+  table_t fields;
+} obj_instance_t;
+
 static inline bool is_obj_type(value_t value, obj_type_t type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
@@ -91,6 +101,7 @@ obj_function_t* function_new();
 obj_native_t* native_new(native_fn_t function, int arity);
 obj_closure_t* closure_new(obj_function_t* function);
 obj_class_t* class_new(obj_string_t* name);
+obj_instance_t* instance_new(obj_class_t* klass);
 void object_print(value_t value);
 
 #endif // _CLOX_OBJECT_H

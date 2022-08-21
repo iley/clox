@@ -85,6 +85,13 @@ obj_class_t* class_new(obj_string_t* name) {
   return klass;
 }
 
+obj_instance_t* instance_new(obj_class_t* klass) {
+  obj_instance_t* instance = ALLOCATE_OBJ(obj_instance_t, OBJ_INSTANCE);
+  instance->klass = klass;
+  table_init(&instance->fields);
+  return instance;
+}
+
 void object_print(value_t value) {
   switch (OBJ_TYPE(value)) {
     case OBJ_STRING:
@@ -104,6 +111,9 @@ void object_print(value_t value) {
       break;
     case OBJ_CLASS:
       printf("%s", AS_CLASS(value)->name->chars);
+      break;
+    case OBJ_INSTANCE:
+      printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
       break;
   }
 }
