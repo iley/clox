@@ -79,6 +79,12 @@ obj_closure_t* closure_new(obj_function_t* function) {
   return closure;
 }
 
+obj_class_t* class_new(obj_string_t* name) {
+  obj_class_t* klass = ALLOCATE_OBJ(obj_class_t, OBJ_CLASS);
+  klass->name = name;
+  return klass;
+}
+
 void object_print(value_t value) {
   switch (OBJ_TYPE(value)) {
     case OBJ_STRING:
@@ -95,6 +101,9 @@ void object_print(value_t value) {
       break;
     case OBJ_CLOSURE:
       function_print(AS_CLOSURE(value)->function);
+      break;
+    case OBJ_CLASS:
+      printf("%s", AS_CLASS(value)->name->chars);
       break;
   }
 }

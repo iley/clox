@@ -138,6 +138,10 @@ void free_object(obj_t* object) {
       FREE_ARRAY(obj_upvalue_t*, closure->upvalues, closure->upvalue_count);
       FREE(obj_closure_t, object);
       break;
+    case OBJ_CLASS: {
+      FREE(obj_class_t, object);
+      break;
+    }
     }
   }
 }
@@ -194,6 +198,11 @@ static void blacken_object(obj_t* object) {
   printf("\n");
 #endif // DEBUG_LOG_GC
   switch (object->type) {
+    case OBJ_CLASS: {
+      obj_class_t* klass = (obj_class_t*)object;
+      mark_object((obj_t*)klass->name);
+      break;
+    }
     case OBJ_CLOSURE: {
       obj_closure_t* closure = (obj_closure_t*)object;
       mark_object((obj_t*)closure->function);

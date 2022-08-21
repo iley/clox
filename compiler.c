@@ -111,6 +111,7 @@ static void literal(bool can_assign);
 static void string(bool can_assign);
 static void call(bool can_assign);
 static void declaration();
+static void class_declaration();
 static void fun_declaration();
 static void statement();
 static void print_statement();
@@ -605,7 +606,9 @@ static void call(bool can_assign) {
 }
 
 static void declaration() {
-  if (match(TOKEN_FUN)) {
+  if (match(TOKEN_CLASS)) {
+    class_declaration();
+  } else if (match(TOKEN_FUN)) {
     fun_declaration();
   } else if (match(TOKEN_VAR)) {
     var_declaration();
@@ -616,6 +619,18 @@ static void declaration() {
   if (parser.panic_mode) {
     synchronize();
   }
+}
+
+static void class_declaration() {
+  consume(TOKEN_IDENTIFIER, "expected class name");
+  uint8_t name_constant = identifier_constant(&parser.previous);
+  declare_variable();
+
+  emit_bytes(OP_CLASS, name_constant);
+  define_variable(name_constant);
+
+  consume(TOKEN_LEFT_BRACE, "expected { before class body");
+  consume(TOKEN_RIGHT_BRACE, "expected } after class body");
 }
 
 static void fun_declaration() {

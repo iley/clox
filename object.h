@@ -12,6 +12,7 @@
 #define IS_FUNCTION(value) is_obj_type(value, OBJ_FUNCTION)
 #define IS_NATIVE(value) is_obj_type(value, OBJ_NATIVE)
 #define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
+#define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
 #define IS_UPVALUE(VALUE) is_obj_type(value, OBJ_UPVALUE)
 
 #define AS_STRING(value)  ((obj_string_t*)AS_OBJ(value))
@@ -19,6 +20,7 @@
 #define AS_FUNCTION(value) ((obj_function_t*)AS_OBJ(value))
 #define AS_NATIVE(value) ((obj_native_t*)AS_OBJ(value))
 #define AS_CLOSURE(value) ((obj_closure_t*)AS_OBJ(value))
+#define AS_CLASS(value) ((obj_class_t*)AS_OBJ(value))
 #define AS_UPVALUE(value) ((obj_upvalue_t*)AS_OBJ(value))
 
 typedef enum {
@@ -27,6 +29,7 @@ typedef enum {
   OBJ_FUNCTION,
   OBJ_NATIVE,
   OBJ_CLOSURE,
+  OBJ_CLASS,
 } obj_type_t;
 
 struct obj_t {
@@ -72,6 +75,11 @@ typedef struct {
   int upvalue_count;
 } obj_closure_t;
 
+typedef struct {
+  obj_t obj;
+  obj_string_t* name;
+} obj_class_t;
+
 static inline bool is_obj_type(value_t value, obj_type_t type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
@@ -82,6 +90,7 @@ obj_upvalue_t* upvalue_new(value_t* slot);
 obj_function_t* function_new();
 obj_native_t* native_new(native_fn_t function, int arity);
 obj_closure_t* closure_new(obj_function_t* function);
+obj_class_t* class_new(obj_string_t* name);
 void object_print(value_t value);
 
 #endif // _CLOX_OBJECT_H

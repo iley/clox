@@ -259,6 +259,8 @@ static execute_result_t vm_run() {
         close_upvalues(vm.stack_top - 1);
         stack_pop();
         break;
+      case OP_CLASS:
+        stack_push(OBJ_VAL(class_new(READ_STRING())));
     }
   }
 
