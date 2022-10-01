@@ -1,0 +1,14 @@
+class Brunch {
+  bacon() {
+    print "bacon!";
+  }
+
+  eggs() {
+    print "eggs!";
+  }
+}
+
+var brunch = Brunch();
+brunch.bacon();
+var eggs = brunch.eggs;
+eggs();

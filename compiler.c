@@ -113,6 +113,7 @@ static void call(bool can_assign);
 static void dot(bool can_assign);
 static void declaration();
 static void class_declaration();
+static void method();
 static void fun_declaration();
 static void statement();
 static void print_statement();
@@ -636,14 +637,28 @@ static void declaration() {
 
 static void class_declaration() {
   consume(TOKEN_IDENTIFIER, "expected class name");
+  token_t class_name = parser.previous;
   uint8_t name_constant = identifier_constant(&parser.previous);
   declare_variable();
 
   emit_bytes(OP_CLASS, name_constant);
   define_variable(name_constant);
 
+  named_variable(class_name, false);
   consume(TOKEN_LEFT_BRACE, "expected { before class body");
+  while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+    method();
+  }
   consume(TOKEN_RIGHT_BRACE, "expected } after class body");
+  emit_byte(OP_POP);
+}
+
+static void method() {
+  consume(TOKEN_IDENTIFIER, "expected method name");
+  uint8_t constant = identifier_constant(&parser.previous);
+  function_type_t type = TYPE_FUNCTION;
+  function(type);
+  emit_bytes(OP_METHOD, constant);
 }
 
 static void fun_declaration() {

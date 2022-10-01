@@ -82,6 +82,7 @@ obj_closure_t* closure_new(obj_function_t* function) {
 obj_class_t* class_new(obj_string_t* name) {
   obj_class_t* klass = ALLOCATE_OBJ(obj_class_t, OBJ_CLASS);
   klass->name = name;
+  table_init(&klass->methods);
   return klass;
 }
 
@@ -90,6 +91,13 @@ obj_instance_t* instance_new(obj_class_t* klass) {
   instance->klass = klass;
   table_init(&instance->fields);
   return instance;
+}
+
+obj_bound_method_t* bound_method_new(value_t receiver, obj_closure_t* method) {
+  obj_bound_method_t* bound = ALLOCATE_OBJ(obj_bound_method_t, OBJ_BOUND_METHOD);
+  bound->receiver = receiver;
+  bound->method = method;
+  return bound;
 }
 
 void object_print(value_t value) {
@@ -114,6 +122,9 @@ void object_print(value_t value) {
       break;
     case OBJ_INSTANCE:
       printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
+      break;
+    case OBJ_BOUND_METHOD:
+      function_print(AS_BOUND_METHOD(value)->method->function);
       break;
   }
 }

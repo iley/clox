@@ -32,6 +32,8 @@ static bool call(obj_closure_t* closure, int arg_count);
 static void native_define(const char* name, int arity, native_fn_t function);
 static value_t native_clock(int arg_count, value_t* args);
 static void close_upvalues(value_t* last);
+static void define_method(obj_string_t* name);
+static bool bind_method(obj_class_t* klass, obj_string_t* name);
 
 void vm_init() {
   stack_reset();
@@ -92,7 +94,7 @@ static execute_result_t vm_run() {
   for (;;) {
 #ifdef DEBUG_TRACE_EXECUTION
     stack_debug_print();
-    disasm_instruction(&frame->closure->function->chunk, (int)(frame->ip - vm.chunk->code));
+    disasm_instruction(&frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
 #else
     (void)stack_debug_print; // unused
 #endif // DEBUG_TRACE_EXECUTION
@@ -262,6 +264,9 @@ static execute_result_t vm_run() {
       case OP_CLASS:
         stack_push(OBJ_VAL(class_new(READ_STRING())));
         break;
+      case OP_METHOD:
+        define_method(READ_STRING());
+        break;
       case OP_GET_PROPERTY: {
         if (!IS_INSTANCE(stack_peek(0))) {
           runtime_error("only instances have properties");
@@ -278,8 +283,11 @@ static execute_result_t vm_run() {
           break;
         }
 
-        runtime_error("undefined property %s", name->chars);
-        return EXECUTE_RUNTIME_ERROR;
+        if (!bind_method(instance->klass, name)) {
+          return EXECUTE_RUNTIME_ERROR;
+        }
+
+        break;
       }
       case OP_SET_PROPERTY: {
         if (!IS_INSTANCE(stack_peek(1))) {
@@ -405,6 +413,10 @@ static bool call_value(value_t callee, int arg_count) {
         vm.stack_top[-arg_count - 1] = OBJ_VAL(instance_new(klass));
         return true;
       }
+      case OBJ_BOUND_METHOD: {
+        obj_bound_method_t* bound = AS_BOUND_METHOD(callee);
+        return call(bound->method, arg_count);
+      }
       default:
         break;
     }
@@ -476,4 +488,24 @@ static void close_upvalues(value_t* last) {
     upvalue->location = &upvalue->closed;
     vm.open_upvalues = upvalue->next;
   }
+}
+
+static void define_method(obj_string_t* name) {
+  value_t method = stack_peek(0);
+  obj_class_t* klass = AS_CLASS(stack_peek(1));
+  table_set(&klass->methods, name, method);
+  stack_pop();
+}
+
+static bool bind_method(obj_class_t* klass, obj_string_t* name) {
+  value_t method;
+  if (!table_get(&klass->methods, name, &method)) {
+      runtime_error("undefined property %s", name->chars);
+      return false;
+  }
+
+  obj_bound_method_t* bound = bound_method_new(stack_peek(0), AS_CLOSURE(method));
+  stack_pop();
+  stack_push(OBJ_VAL(bound));
+  return true;
 }

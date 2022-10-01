@@ -15,6 +15,7 @@
 #define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
 #define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
 #define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
+#define IS_BOUND_METHOD(value) is_obj_type(value, OBJ_BOUND_METHOD)
 #define IS_UPVALUE(VALUE) is_obj_type(value, OBJ_UPVALUE)
 
 #define AS_STRING(value)  ((obj_string_t*)AS_OBJ(value))
@@ -24,6 +25,7 @@
 #define AS_CLOSURE(value) ((obj_closure_t*)AS_OBJ(value))
 #define AS_CLASS(value) ((obj_class_t*)AS_OBJ(value))
 #define AS_INSTANCE(value) ((obj_instance_t*)AS_OBJ(value))
+#define AS_BOUND_METHOD(value) ((obj_bound_method_t*)AS_OBJ(value))
 #define AS_UPVALUE(value) ((obj_upvalue_t*)AS_OBJ(value))
 
 typedef enum {
@@ -34,6 +36,7 @@ typedef enum {
   OBJ_CLOSURE,
   OBJ_CLASS,
   OBJ_INSTANCE,
+  OBJ_BOUND_METHOD,
 } obj_type_t;
 
 struct obj_t {
@@ -82,6 +85,7 @@ typedef struct {
 typedef struct {
   obj_t obj;
   obj_string_t* name;
+  table_t methods;
 } obj_class_t;
 
 typedef struct {
@@ -89,6 +93,12 @@ typedef struct {
   obj_class_t* klass;
   table_t fields;
 } obj_instance_t;
+
+typedef struct {
+  obj_t obj;
+  value_t receiver;
+  obj_closure_t* method;
+} obj_bound_method_t;
 
 static inline bool is_obj_type(value_t value, obj_type_t type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
@@ -102,6 +112,7 @@ obj_native_t* native_new(native_fn_t function, int arity);
 obj_closure_t* closure_new(obj_function_t* function);
 obj_class_t* class_new(obj_string_t* name);
 obj_instance_t* instance_new(obj_class_t* klass);
+obj_bound_method_t* bound_method_new(value_t receiver, obj_closure_t* method);
 void object_print(value_t value);
 
 #endif // _CLOX_OBJECT_H
