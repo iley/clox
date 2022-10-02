@@ -1,3 +1,5 @@
 clox
 *.o
 *.dSYM
+x64
+clox.vcxproj.user
