@@ -1,19 +1,13 @@
-class Brunch {
+class Person {
   init() {
-    this._bacon = "bacon!";
-    this._eggs = "eggs!";
+    this.name = "John";
   }
 
-  bacon() {
-    print this._eggs;
-  }
-
-  eggs() {
-    print this._bacon;
+  greet() {
+    print "Hello " + this.name;
   }
 }
 
-var brunch = Brunch();
-brunch.bacon();
-var eggs = brunch.eggs;
-eggs();
+var john = Person();
+john.greet();
+print "Hello " + "world";

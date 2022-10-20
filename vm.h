@@ -24,6 +24,7 @@ typedef struct {
 
   table_t globals;
   table_t strings;
+  obj_string_t* init_string;
   obj_upvalue_t* open_upvalues;
 
   size_t bytes_allocated;

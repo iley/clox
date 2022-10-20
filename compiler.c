@@ -37,6 +37,7 @@ typedef enum {
   TYPE_FUNCTION,
   TYPE_METHOD,
   TYPE_SCRIPT,
+  TYPE_INITIALIZER,
 } function_type_t;
 
 typedef void (*parse_fn)(bool can_assign);
@@ -321,7 +322,11 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2) {
 }
 
 static void emit_return() {
-  emit_byte(OP_NIL);
+  if (current->type == TYPE_INITIALIZER) {
+    emit_bytes(OP_GET_LOCAL, 0);
+  } else {
+    emit_byte(OP_NIL);
+  }
   emit_byte(OP_RETURN);
 }
 
@@ -686,6 +691,10 @@ static void method() {
   consume(TOKEN_IDENTIFIER, "expected method name");
   uint8_t constant = identifier_constant(&parser.previous);
   function_type_t type = TYPE_METHOD;
+  if (parser.previous.length == 4 &&
+      memcmp(parser.previous.start, "init", 4) == 0) {
+    type = TYPE_INITIALIZER;
+  }
   function(type);
   emit_bytes(OP_METHOD, constant);
 }
@@ -812,6 +821,9 @@ static void return_statement() {
   if (match(TOKEN_SEMICOLON)) {
     emit_return();
   } else {
+    if (current->type == TYPE_INITIALIZER) {
+      error("can't return a value from an initializer");
+    }
     expression();
     consume(TOKEN_SEMICOLON, "expected ; after return value");
     emit_byte(OP_RETURN);

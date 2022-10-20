@@ -48,12 +48,16 @@ void vm_init() {
   table_init(&vm.globals);
   table_init(&vm.strings);
 
+  vm.init_string = NULL;
+  vm.init_string = string_copy("init", 4);
+
   native_define("clock", 0, native_clock);
 }
 
 void vm_free() {
   table_free(&vm.strings);
   table_free(&vm.globals);
+  vm.init_string = NULL;
   free_objects();
 }
 
@@ -378,7 +382,7 @@ static bool is_falsey(value_t value) {
 
 static void concatenate_strings() {
   obj_string_t* second = AS_STRING(stack_peek(0));
-  obj_string_t* first = AS_STRING(stack_peek(0));
+  obj_string_t* first = AS_STRING(stack_peek(1));
 
   int length = first->length + second->length;
   char* chars = ALLOCATE(char, length + 1);
@@ -411,6 +415,13 @@ static bool call_value(value_t callee, int arg_count) {
       case OBJ_CLASS: {
         obj_class_t* klass = AS_CLASS(callee);
         vm.stack_top[-arg_count - 1] = OBJ_VAL(instance_new(klass));
+        value_t initializer;
+        if (table_get(&klass->methods, vm.init_string, &initializer)) {
+          return call(AS_CLOSURE(initializer), arg_count);
+        } else if (arg_count != 0) {
+          runtime_error("expected 0 arguments in class instantiation, got %d", arg_count);
+          return false;
+        }
         return true;
       }
       case OBJ_BOUND_METHOD: {
