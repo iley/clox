@@ -1,10 +1,15 @@
 class Brunch {
+  init() {
+    this._bacon = "bacon!";
+    this._eggs = "eggs!";
+  }
+
   bacon() {
-    print "bacon!";
+    print this._eggs;
   }
 
   eggs() {
-    print "eggs!";
+    print this._bacon;
   }
 }
 

@@ -415,6 +415,7 @@ static bool call_value(value_t callee, int arg_count) {
       }
       case OBJ_BOUND_METHOD: {
         obj_bound_method_t* bound = AS_BOUND_METHOD(callee);
+        vm.stack_top[-arg_count - 1] = bound->receiver;
         return call(bound->method, arg_count);
       }
       default:
