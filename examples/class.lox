@@ -1,13 +1,12 @@
 class Person {
-  init() {
-    this.name = "John";
+  init(name) {
+    this.name = name;
   }
 
   greet() {
-    print "Hello " + this.name;
+    print "Hello " + this.name + "!";
   }
 }
 
-var john = Person();
+var john = Person("John");
 john.greet();
-print "Hello " + "world";
