@@ -317,6 +317,17 @@ static execute_result_t vm_run() {
         frame = &vm.frames[vm.frame_count - 1];
         break;
       }
+      case OP_INHERIT: {
+        value_t superclass = stack_peek(1);
+        if (!IS_CLASS(superclass)) {
+          runtime_error("superclass must be a class");
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        obj_class_t* subclass = AS_CLASS(stack_peek(0));
+        table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+        stack_pop();
+        break;
+      }
     }
   }
 

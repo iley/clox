@@ -94,6 +94,8 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_constant("OP_GET_PROPERTY", chunk, offset);
     case OP_INVOKE:
       return disasm_invoke_instruction("OP_INVOKE", chunk, offset);
+    case OP_INHERIT:
+      return disasm_simple("OP_INHERIT", offset);
     default:
       printf("unknown instruction %02x\n", instruction);
       return offset + 1;
