@@ -1,0 +1,15 @@
+class A {
+  foo() {
+    print "A::foo()";
+  }
+}
+
+class B < A {
+  foo() {
+    super.foo();
+    print "B::foo()";
+  }
+}
+
+var b = B();
+b.foo();

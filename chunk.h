@@ -29,6 +29,7 @@ typedef enum {
   OP_SET_LOCAL,
   OP_GET_UPVALUE,
   OP_SET_UPVALUE,
+  OP_GET_SUPER,
   OP_RETURN,
   OP_JUMP,
   OP_JUMP_IF_FALSE,
@@ -41,6 +42,7 @@ typedef enum {
   OP_GET_PROPERTY,
   OP_METHOD,
   OP_INVOKE,
+  OP_SUPER_INVOKE,
   OP_INHERIT,
 } opcode_t;
 

@@ -73,6 +73,7 @@ typedef struct compiler_t {
 typedef struct class_compiler_t {
   struct class_compiler_t* enclosing;
   token_t name;
+  bool has_superclass;
 } class_compiler_t;
 
 // Forward declarations.
@@ -119,6 +120,7 @@ static void string(bool can_assign);
 static void call(bool can_assign);
 static void dot(bool can_assign);
 static void this_(bool can_assign);
+static void super_(bool can_assign);
 static void declaration();
 static void class_declaration();
 static void method();
@@ -138,6 +140,7 @@ static void named_variable(token_t name, bool can_assign);
 static void block();
 static void scope_begin();
 static void scope_end();
+static token_t synthetic_token(const char* text);
 
 parser_t parser;
 compiler_t* current = NULL;
@@ -179,7 +182,7 @@ parse_rule_t rules[] = {
   [TOKEN_OR]            = { NULL,     or_,    PREC_OR },
   [TOKEN_PRINT]         = { NULL,     NULL,   PREC_NONE },
   [TOKEN_RETURN]        = { NULL,     NULL,   PREC_NONE },
-  [TOKEN_SUPER]         = { NULL,     NULL,   PREC_NONE },
+  [TOKEN_SUPER]         = { super_,   NULL,   PREC_NONE },
   [TOKEN_THIS]          = { this_,    NULL,   PREC_NONE },
   [TOKEN_TRUE]          = { literal,  NULL,   PREC_NONE },
   [TOKEN_VAR]           = { NULL,     NULL,   PREC_NONE },
@@ -650,6 +653,32 @@ static void this_(bool can_assign) {
   variable(false);
 }
 
+static void super_(bool can_assign) {
+  (void)can_assign; // unused
+
+  if (current_class == NULL) {
+    error("can't use 'super' outside a class");
+  } else if (!current_class->has_superclass) {
+    error("can't use 'super' in a class with no superclass");
+  }
+
+  consume(TOKEN_DOT, "expected '.' after super");
+  consume(TOKEN_IDENTIFIER, "expected superclass method name");
+
+  uint8_t name = identifier_constant(&parser.previous);
+  named_variable(synthetic_token("this"), false);
+
+  if (match(TOKEN_LEFT_PAREN)) {
+    uint8_t argument_count = argument_list();
+    named_variable(synthetic_token("super"), false);
+    emit_bytes(OP_SUPER_INVOKE, name);
+    emit_byte(argument_count);
+  } else {
+    named_variable(synthetic_token("super"), false);
+    emit_bytes(OP_GET_SUPER, name);
+  }
+}
+
 static void declaration() {
   if (match(TOKEN_CLASS)) {
     class_declaration();
@@ -678,6 +707,7 @@ static void class_declaration() {
   class_compiler_t class_compiler;
   class_compiler.name = parser.previous;
   class_compiler.enclosing = current_class;
+  class_compiler.has_superclass = false;
   current_class = &class_compiler;
 
   if (match(TOKEN_LESS)) {
@@ -688,8 +718,13 @@ static void class_declaration() {
       error("a class cannot inherit from itself");
     }
 
+    scope_begin();
+    add_local(synthetic_token("super"));
+    define_variable(0);
+
     named_variable(class_name, false);
     emit_byte(OP_INHERIT);
+    class_compiler.has_superclass = true;
   }
 
   named_variable(class_name, false);
@@ -699,6 +734,10 @@ static void class_declaration() {
   }
   consume(TOKEN_RIGHT_BRACE, "expected } after class body");
   emit_byte(OP_POP);
+
+  if (class_compiler.has_superclass) {
+    scope_end();
+  }
 
   current_class = current_class->enclosing;
 }
@@ -972,4 +1011,11 @@ static void scope_end() {
     }
     current->local_count--;
   }
+}
+
+static token_t synthetic_token(const char* text) {
+  token_t token;
+  token.start = text;
+  token.length = (int)strlen(text);
+  return token;
 }

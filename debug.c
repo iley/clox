@@ -56,6 +56,8 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_byte_instruction("OP_GET_UPVALUE", chunk, offset);
     case OP_SET_UPVALUE:
       return disasm_byte_instruction("OP_SET_UPVALUE", chunk, offset);
+    case OP_GET_SUPER:
+      return disasm_byte_instruction("OP_GET_SUPER", chunk, offset);
     case OP_RETURN:   return disasm_simple("OP_RETURN", offset);
     case OP_JUMP:
       return disasm_jump_instruction("OP_JUMP", 1, chunk, offset);
@@ -94,6 +96,8 @@ int disasm_instruction(chunk_t* chunk, int offset) {
       return disasm_constant("OP_GET_PROPERTY", chunk, offset);
     case OP_INVOKE:
       return disasm_invoke_instruction("OP_INVOKE", chunk, offset);
+    case OP_SUPER_INVOKE:
+      return disasm_invoke_instruction("OP_SUPER_INVOKE", chunk, offset);
     case OP_INHERIT:
       return disasm_simple("OP_INHERIT", offset);
     default:

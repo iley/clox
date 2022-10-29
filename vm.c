@@ -209,6 +209,14 @@ static execute_result_t vm_run() {
         *frame->closure->upvalues[slot]->location = stack_peek(0);
         break;
       }
+      case OP_GET_SUPER: {
+        obj_string_t* name = READ_STRING();
+        obj_class_t* superclass = AS_CLASS(stack_pop());
+        if (!bind_method(superclass, name)) {
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_RETURN: {
         value_t result = stack_pop();
         close_upvalues(frame->slots);
@@ -312,6 +320,16 @@ static execute_result_t vm_run() {
         obj_string_t* method = READ_STRING();
         int arg_count = READ_BYTE();
         if (!invoke(method, arg_count)) {
+          return EXECUTE_RUNTIME_ERROR;
+        }
+        frame = &vm.frames[vm.frame_count - 1];
+        break;
+      }
+      case OP_SUPER_INVOKE: {
+        obj_string_t* method = READ_STRING();
+        int arg_count = READ_BYTE();
+        obj_class_t* superclass = AS_CLASS(stack_pop());
+        if (!invoke_from_class(superclass, method, arg_count)) {
           return EXECUTE_RUNTIME_ERROR;
         }
         frame = &vm.frames[vm.frame_count - 1];
