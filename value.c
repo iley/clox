@@ -30,6 +30,17 @@ void value_array_write(value_array_t* array, value_t value) {
 }
 
 void value_print(value_t value) {
+#ifdef NAN_BOXING
+  if (IS_BOOL(value)) {
+    printf(AS_BOOL(value) ? "true" : "false");
+  } else if (IS_NIL(value)) {
+    printf("nil");
+  } else if (IS_NUMBER(value)) {
+    printf("%g", AS_NUMBER(value));
+  } else if (IS_OBJ(value)) {
+    object_print(value);
+  }
+#else
   switch (value.type) {
     case VAL_BOOL:
       printf(AS_BOOL(value) ? "true" : "false");
@@ -44,9 +55,16 @@ void value_print(value_t value) {
       object_print(value);
       break;
   }
+#endif // NAN_BOXING
 }
 
 bool values_equal(value_t first, value_t second) {
+#ifdef NAN_BOXING
+  if (IS_NUMBER(first) && IS_NUMBER(second)) {
+    return AS_NUMBER(first) == AS_NUMBER(second);
+  }
+  return first == second;
+#else
   if (first.type != second.type) {
     return false;
   }
@@ -57,4 +75,5 @@ bool values_equal(value_t first, value_t second) {
     case VAL_OBJ:    return AS_OBJ(first) == AS_OBJ(second);
     default:         return false;  // unreachable
   }
+#endif // NAN_BOXING
 }
